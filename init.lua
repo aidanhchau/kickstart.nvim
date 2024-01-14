@@ -59,6 +59,7 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+
 -- NOTE: Here is where you install your plugins.
 --  You can configure plugins using the `config` key.
 --
@@ -73,6 +74,34 @@ require('lazy').setup({
 
   -- Detect tabstop and shiftwidth automatically
   'tpope/vim-sleuth',
+
+  -- MY PLUGINS
+  'github/copilot.vim',
+  'jiangmiao/auto-pairs',
+  { 'numToStr/Comment.nvim', opts = {}, lazy = false, },
+  'nvim-tree/nvim-web-devicons',
+  'sharkdp/fd',
+  'tpope/vim-unimpaired',
+  {
+      'cameron-wags/rainbow_csv.nvim',
+      config = true,
+      ft = {
+          'csv',
+          'tsv',
+          'csv_semicolon',
+          'csv_whitespace',
+          'csv_pipe',
+          'rfc_csv',
+          'rfc_semicolon'
+      },
+      cmd = {
+          'RainbowDelim',
+          'RainbowDelimSimple',
+          'RainbowDelimQuoted',
+          'RainbowMultiDelim'
+      }
+  },
+  'prettier/vim-prettier',
 
   -- NOTE: This is where your plugins related to LSP can be installed.
   --  The configuration is done below. Search for lspconfig to find it below.
@@ -150,13 +179,36 @@ require('lazy').setup({
     },
   },
 
+  -- EDITOR COLOR THEMES
   {
     -- Theme inspired by Atom
-    'navarasu/onedark.nvim',
+    --[[ 'navarasu/onedark.nvim',
     priority = 1000,
     config = function()
       vim.cmd.colorscheme 'onedark'
+    end, ]]
+  },
+
+  {
+    'folke/tokyonight.nvim',
+    lazy = false,
+    priority = 1000,
+    opts = {},
+    config = function()
+      vim.cmd.colorscheme 'tokyonight-night'
     end,
+  },
+  
+
+
+  {
+    'martinsione/darkplus.nvim',
+    --[[ lazy = false,
+    priority = 1000,
+    opts = {},
+    config = function()
+      vim.cmd.colorscheme 'darkplus'
+    end, ]]
   },
 
   {
@@ -166,7 +218,7 @@ require('lazy').setup({
     opts = {
       options = {
         icons_enabled = false,
-        theme = 'onedark',
+        theme = 'tokyonight',
         component_separators = '|',
         section_separators = '',
       },
@@ -214,6 +266,7 @@ require('lazy').setup({
     },
     build = ':TSUpdate',
   },
+
 
   -- NOTE: Next Step on Your Neovim Journey: Add/Configure additional "plugins" for kickstart
   --       These are some example plugins that I've included in the kickstart repository.
@@ -263,13 +316,17 @@ vim.wo.signcolumn = 'yes'
 
 -- Decrease update time
 vim.o.updatetime = 250
-vim.o.timeoutlen = 300
+vim.o.timeoutlen = 100
 
 -- Set completeopt to have a better completion experience
 vim.o.completeopt = 'menuone,noselect'
 
 -- NOTE: You should make sure your terminal supports this
 vim.o.termguicolors = true
+
+
+
+
 
 -- [[ Basic Keymaps ]]
 
@@ -318,6 +375,13 @@ vim.keymap.set('n', '<leader>/', function()
     previewer = false,
   })
 end, { desc = '[/] Fuzzily search in current buffer' })
+vim.keymap.set('n', '<leader>fr', function()
+  require('telescope.builtin').lsp_references()
+end, {
+  noremap = true,
+  silent = true,
+  desc = 'Find LSP references',
+})
 
 vim.keymap.set('n', '<leader>gf', require('telescope.builtin').git_files, { desc = 'Search [G]it [F]iles' })
 vim.keymap.set('n', '<leader>sf', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles' })
@@ -535,24 +599,8 @@ cmp.setup {
       behavior = cmp.ConfirmBehavior.Replace,
       select = true,
     },
-    ['<Tab>'] = cmp.mapping(function(fallback)
-      if cmp.visible() then
-        cmp.select_next_item()
-      elseif luasnip.expand_or_locally_jumpable() then
-        luasnip.expand_or_jump()
-      else
-        fallback()
-      end
-    end, { 'i', 's' }),
-    ['<S-Tab>'] = cmp.mapping(function(fallback)
-      if cmp.visible() then
-        cmp.select_prev_item()
-      elseif luasnip.locally_jumpable(-1) then
-        luasnip.jump(-1)
-      else
-        fallback()
-      end
-    end, { 'i', 's' }),
+    ['<Down>'] = cmp.mapping.select_next_item(),
+    ['<Up>'] = cmp.mapping.select_prev_item(),
   },
   sources = {
     { name = 'nvim_lsp' },
@@ -562,3 +610,74 @@ cmp.setup {
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+
+-- Custom Keymaps
+vim.keymap.set("i", "<S-Tab>", "<Esc><<_i")
+
+-- Tab Mapping: Copilot >> Indent 
+vim.keymap.set("i", "<Tab>", function()
+  local copilot_keys = vim.fn['copilot#Accept']()
+  if copilot_keys ~= '' and type(copilot_keys) == 'string' then
+    vim.api.nvim_feedkeys(copilot_keys, 'i', true)
+  else
+    return "<Tab>" -- vanilla indent
+  end
+end)
+
+vim.g.copilot_filetypes = {
+  ["*"] = false,
+  ["javascript"] = true,
+  ["java"] = true,
+  ["typescript"] = true,
+  ["lua"] = false,
+  ["rust"] = true,
+  ["c"] = true,
+  ["c#"] = true,
+  ["cpp"] = true,
+  ["go"] = true,
+  ["python"] = true,
+}
+
+vim.o.tabstop = 2
+vim.o.shiftwidth = 2
+vim.o.softtabstop = 2
+vim.o.expandtab = true
+
+--[[ -- Add these lines to your init.lua or a Lua configuration file
+vim.keymap.set("n", "<Leader>o", "o<Esc>")
+vim.keymap.set("n", "<Leader>O", "O<Esc>>") ]]
+
+-- BlankUp: Inserts blank lines above the current line
+vim.api.nvim_set_keymap('n', 'O', ':call BlankUp()<CR>', { noremap = true, silent = true })
+
+-- BlankDown: Inserts blank lines below the current line
+vim.api.nvim_set_keymap('n', 'o', ':call BlankDown()<CR>', { noremap = true, silent = true })
+
+-- Lua function for BlankUp
+vim.cmd([[
+function! BlankUp()
+  let cmd = 'execute "normal! '.v:count1.'O"'
+  if &modifiable
+    let cmd .= '|silent! call repeat#set("\<Plug>(unimpaired-blank-up)", v:count1)'
+  endif
+  execute cmd
+endfunction
+]])
+
+-- Lua function for BlankDown
+vim.cmd([[
+function! BlankDown()
+  let cmd = 'execute "normal! '.v:count1.'o"'
+  if &modifiable
+    let cmd .= '|silent! call repeat#set("\<Plug>(unimpaired-blank-down)", v:count1)'
+  endif
+  execute cmd
+endfunction
+]])
+
+-- Move blocks of code up and down in Visual Mode
+vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
+vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
+
+-- Terminal -> Normal Mode
+vim.api.nvim_set_keymap("t", "<Esc>", "<C-\\><C-n>", {noremap = true})
