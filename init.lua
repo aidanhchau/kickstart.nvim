@@ -16,9 +16,7 @@ Kickstart.nvim is a template for your own configuration.
   If you don't know anything about Lua, I recommend taking some time to read through
   a guide. One possible example:
   - https://learnxinyminutes.com/docs/lua/
-
-
-  And then you can explore or search through `:help lua-guide`
+And then you can explore or search through `:help lua-guide`
   - https://neovim.io/doc/user/lua-guide.html
 
 
@@ -77,31 +75,52 @@ require('lazy').setup({
 
   -- MY PLUGINS
   'github/copilot.vim',
+
+  -- easily jump to word in line 
+  {
+    'jinh0/eyeliner.nvim',
+    config = function()
+      require'eyeliner'.setup{
+        highlight_on_key = true,
+        dim = true,
+      }
+    end
+  },
+
+  -- minimap
+  'wfxr/minimap.vim',
+  -- {
+  --   'gorbit99/codewindow.nvim',
+  --   config = function()
+  --     local codewindow = require('codewindow')
+  --     codewindow.setup()
+  --     codewindow.apply_default_keybinds()
+  --   end,
+  -- },
+
+  -- show colors (e.g. #00000)
+  'norcalli/nvim-colorizer.lua',
+
+
   'jiangmiao/auto-pairs',
+
   { 'numToStr/Comment.nvim', opts = {}, lazy = false, },
+
   'nvim-tree/nvim-web-devicons',
   'sharkdp/fd',
   'tpope/vim-unimpaired',
-  {
-      'cameron-wags/rainbow_csv.nvim',
-      config = true,
-      ft = {
-          'csv',
-          'tsv',
-          'csv_semicolon',
-          'csv_whitespace',
-          'csv_pipe',
-          'rfc_csv',
-          'rfc_semicolon'
-      },
-      cmd = {
-          'RainbowDelim',
-          'RainbowDelimSimple',
-          'RainbowDelimQuoted',
-          'RainbowMultiDelim'
-      }
-  },
   'prettier/vim-prettier',
+
+
+  {
+    'stevearc/aerial.nvim',
+    opts = {},
+    -- Optional dependencies
+    dependencies = {
+       "nvim-treesitter/nvim-treesitter",
+       "nvim-tree/nvim-web-devicons"
+    },
+  },
 
   -- NOTE: This is where your plugins related to LSP can be installed.
   --  The configuration is done below. Search for lspconfig to find it below.
@@ -119,6 +138,14 @@ require('lazy').setup({
 
       -- Additional lua configuration, makes nvim stuff amazing!
       'folke/neodev.nvim',
+
+
+      'SmiteshP/nvim-navbuddy',
+      dependencies = {
+        'SmiteshP/nvim-navic',
+        'MunifTanjim/nui.nvim'
+      },
+      opts = { lsp = { auto_attach = true } }
     },
   },
 
@@ -139,7 +166,11 @@ require('lazy').setup({
   },
 
   -- Useful plugin to show you pending keybinds.
-  { 'folke/which-key.nvim', opts = {} },
+  {
+    'folke/which-key.nvim',
+    opts = {}
+  },
+
   {
     -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
@@ -511,6 +542,7 @@ local on_attach = function(_, bufnr)
   end, { desc = 'Format current buffer with LSP' })
 end
 
+
 -- document existing key chains
 require('which-key').register {
   ['<leader>c'] = { name = '[C]ode', _ = 'which_key_ignore' },
@@ -612,7 +644,7 @@ cmp.setup {
 -- vim: ts=2 sts=2 sw=2 et
 
 -- Custom Keymaps
-vim.keymap.set("i", "<S-Tab>", "<Esc><<_i")
+vim.keymap.set("i", "<S-Tab>", "<Esc><<<<_i")
 
 -- Tab Mapping: Copilot >> Indent 
 vim.keymap.set("i", "<Tab>", function()
@@ -638,9 +670,9 @@ vim.g.copilot_filetypes = {
   ["python"] = true,
 }
 
-vim.o.tabstop = 2
-vim.o.shiftwidth = 2
-vim.o.softtabstop = 2
+vim.o.tabstop = 4
+vim.o.shiftwidth = 4
+vim.o.softtabstop = 4
 vim.o.expandtab = true
 
 --[[ -- Add these lines to your init.lua or a Lua configuration file
@@ -681,3 +713,93 @@ vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
 
 -- Terminal -> Normal Mode
 vim.api.nvim_set_keymap("t", "<Esc>", "<C-\\><C-n>", {noremap = true})
+
+
+-- Setup language servers.
+local lspconfig = require('lspconfig')
+lspconfig.pyright.setup {}
+lspconfig.tsserver.setup {}
+lspconfig.rust_analyzer.setup {
+  -- Server-specific settings. See `:help lspconfig-setup`
+  settings = {
+    ['rust-analyzer'] = {},
+  },
+}
+
+
+-- Global mappings.
+-- See `:help vim.diagnostic.*` for documentation on any of the below functions
+vim.keymap.set('n', '<space>e', vim.diagnostic.open_float)
+vim.keymap.set('n', '[d', vim.diagnostic.goto_prev)
+vim.keymap.set('n', ']d', vim.diagnostic.goto_next)
+vim.keymap.set('n', '<space>q', vim.diagnostic.setloclist)
+
+-- Use LspAttach autocommand to only map the following keys
+-- after the language server attaches to the current buffer
+vim.api.nvim_create_autocmd('LspAttach', {
+  group = vim.api.nvim_create_augroup('UserLspConfig', {}),
+  callback = function(ev)
+    -- Enable completion triggered by <c-x><c-o>
+    vim.bo[ev.buf].omnifunc = 'v:lua.vim.lsp.omnifunc'
+
+    -- Buffer local mappings.
+    -- See `:help vim.lsp.*` for documentation on any of the below functions
+    local opts = { buffer = ev.buf }
+    vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
+    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+    vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
+    vim.keymap.set('n', '<C-k>', vim.lsp.buf.signature_help, opts)
+    vim.keymap.set('n', '<space>wa', vim.lsp.buf.add_workspace_folder, opts)
+    vim.keymap.set('n', '<space>wr', vim.lsp.buf.remove_workspace_folder, opts)
+    vim.keymap.set('n', '<space>wl', function()
+      print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
+    end, opts)
+    vim.keymap.set('n', '<space>D', vim.lsp.buf.type_definition, opts)
+    vim.keymap.set('n', '<space>rn', vim.lsp.buf.rename, opts)
+    vim.keymap.set({ 'n', 'v' }, '<space>ca', vim.lsp.buf.code_action, opts)
+    vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
+    vim.keymap.set('n', '<space>f', function()
+      vim.lsp.buf.format { async = true }
+    end, opts)
+  end,
+})
+
+
+require("aerial").setup({
+  -- optionally use on_attach to set keymaps when aerial has attached to a buffer
+  on_attach = function(bufnr)
+    -- Jump forwards/backwards with '{' and '}'
+    vim.keymap.set("n", "{", "<cmd>AerialPrev<CR>", { buffer = bufnr })
+    vim.keymap.set("n", "}", "<cmd>AerialNext<CR>", { buffer = bufnr })
+  end,
+
+
+  layout = {
+    min_width = 20,
+    default_direction = "left",
+  },
+
+  -- Show box drawing characters for the tree hierarchy
+  show_guides = true,
+
+  -- Customize the characters used when show_guides = true
+  guides = {
+    -- When the child item has a sibling below it
+    mid_item = "├─",
+    -- When the child item is the last in the list
+    last_item = "└─",
+    -- When there are nested child guides to the right
+    nested_top = "│ ",
+    -- Raw indentation
+    whitespace = "  ",
+  },
+})
+-- You probably also want to set a keymap to toggle aerial
+vim.keymap.set("n", "ma", "<cmd>AerialToggle<CR>")
+
+
+
+
+
+
