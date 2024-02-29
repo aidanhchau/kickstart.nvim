@@ -165,6 +165,8 @@ require('lazy').setup({
     },
   },
 
+  'averms/black-nvim', -- Python Black Formatter
+
   -- Useful plugin to show you pending keybinds.
   {
     'folke/which-key.nvim',
